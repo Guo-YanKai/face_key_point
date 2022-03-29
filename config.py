@@ -30,4 +30,23 @@ parser.add_argument("--gauss_sigma", type =float , default=5.0, help="高斯滤�
 parser.add_argument("--valid_rate", type=float, default=0.2, help="验证集划分率")
 parser.add_argument("--batch_size", type=int, default=2, help="batch size")
 
+
+# 训练过程参数
+parser.add_argument("--net_name", type=str, default="unet",
+                    help="选择模型结构:[unet, res_unet]")
+parser.add_argument("--optimizer", type=str, default="Adam",
+                    help="chose one optimizer:[SGD,Adam,RMSprop]")
+
+parser.add_argument("--scheduler", type=str, default="StepLR",
+                    help="学习率衰减方式:[StepLR, MultiStepLR, ExponentialLR, CosineAnnealingLR]")
+
+parser.add_argument("--loss", type=str, default="MSE",
+                    help="损失函数:[CRE, DiceLoss, BCEDiceLoss, FocalLoss, LovaszLoss]")
+
+parser.add_argument("--epochs", type=int, default=5,
+                    help="number of epochs to train")
+parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
+
+parser.add_argument("--early_stop", type=int, default=30, help="early stopping")
+
 args = parser.parse_args()

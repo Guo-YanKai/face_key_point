@@ -40,8 +40,8 @@ parser.add_argument("--optimizer", type=str, default="Adam",
 parser.add_argument("--scheduler", type=str, default="StepLR",
                     help="学习率衰减方式:[StepLR, MultiStepLR, ExponentialLR, CosineAnnealingLR]")
 
-parser.add_argument("--loss", type=str, default="MSE",
-                    help="损失函数:[CRE, DiceLoss, BCEDiceLoss, FocalLoss, LovaszLoss]")
+parser.add_argument("--loss", type=str, default="AdaptiveWingLoss",
+                    help="损失函数:[CRE, MSE, FocalLoss, WingLoss, AdaptiveWingLoss]")
 
 parser.add_argument("--epochs", type=int, default=5,
                     help="number of epochs to train")

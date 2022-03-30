@@ -9,7 +9,7 @@
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
-
+from models.weights_init import init_weights
 
 class DoubleConv(nn.Module):
     def __init__(self, in_ch, out_ch):
@@ -76,6 +76,15 @@ class unet(nn.Module):
 
         self.outconv = nn.Conv2d(64, out_ch, 1)
         self.predict_gaussian = predict_gaussian
+
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init_weights(m, init_type="kaiming")
+            elif isinstance(m, nn.BatchNorm2d):
+                init_weights(m, init_type="kaiming")
+
+
 
     def forward(self,x):
         x1 = self.inconv(x)

@@ -18,7 +18,10 @@ from utils.metric import LossAverage
 import os
 from tqdm import tqdm
 from collections import OrderedDict
+from collections import Counter
+from utils.loss import FocalLoss, WingLoss, AdaptiveWingLoss
 
+import numpy as np
 
 def val(net, val_loader, criterion, device, args):
     net.eval()
@@ -42,7 +45,11 @@ def train(net, train_loader, criterion, optimizer, device, args):
         optimizer.zero_grad()
         batch_images = batch["image"].to(device, dtype=torch.float32)
         batch_labels = batch["label"].to(device, dtype=torch.float32)
+
         output = net(batch_images)
+        # print("batch_labels:", batch_labels.shape)
+        # print("output:", output.shape)
+        # print("batch_labels[0]:", Counter(np.array(batch_labels[0].detach().cpu()).ravel()))
         loss = criterion(output, batch_labels)
 
         loss.backward()
@@ -52,6 +59,7 @@ def train(net, train_loader, criterion, optimizer, device, args):
     train_log = OrderedDict({"Train_Loss": train_loss.avg})
     train_log.update({"lr": optimizer.state_dict()["param_groups"][0]["lr"]})
     return train_log
+
 
 
 if __name__ == "__main__":
@@ -68,8 +76,15 @@ if __name__ == "__main__":
 
     net = unet(3, args.n_landmark).to(device)
 
+
     if args.loss == "CRE":
         criterion = nn.CrossEntropyLoss()
+    elif args.loss=="FocalLoss":
+        criterion = FocalLoss()
+    elif args.loss=="WingLoss":
+        criterion = WingLoss()
+    elif args.loss =="AdaptiveWingLoss":
+        criterion = AdaptiveWingLoss()
     else:
         criterion = nn.MSELoss()
 
@@ -91,8 +106,8 @@ if __name__ == "__main__":
     trigger = 0
     for epoch in range(1, args.epochs + 1):
         train_log = train(net, train_loader, criterion, optimizer, device, args)
-        val_log = val(net, val_loader, criterion, device, args)
 
+        val_log = val(net, val_loader, criterion, device, args)
         scheduler.step()
         log.update(epoch, train_log, val_log)
         # save checkpoints

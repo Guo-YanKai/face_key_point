@@ -20,7 +20,7 @@ from tqdm import tqdm
 from collections import OrderedDict
 from collections import Counter
 from utils.loss import FocalLoss, WingLoss, AdaptiveWingLoss
-
+from models.weights_init import init_model
 import numpy as np
 
 def val(net, val_loader, criterion, device, args):
@@ -32,10 +32,12 @@ def val(net, val_loader, criterion, device, args):
             batch_masks = batch["label"].to(device, dtype=torch.float32)
             output = net(batch_images)
             loss = criterion(output, batch_masks)
-            val_loss.update(loss.item(), batch_images.size(0))
-            val_log = OrderedDict({"Val_Loss": val_loss.avg})
-    return val_log
-
+            print("val_loss:",loss)
+            break
+            # val_loss.update(loss.item(), batch_images.size(0))
+            # val_log = OrderedDict({"Val_Loss": val_loss.avg})
+    # return val_log
+    return 1
 
 def train(net, train_loader, criterion, optimizer, device, args):
     print("=====Epoch:{}======lr:{}".format(epoch, optimizer.state_dict()["param_groups"][0]["lr"]))
@@ -51,14 +53,18 @@ def train(net, train_loader, criterion, optimizer, device, args):
         # print("output:", output.shape)
         # print("batch_labels[0]:", Counter(np.array(batch_labels[0].detach().cpu()).ravel()))
         loss = criterion(output, batch_labels)
+        print("loss:", loss)
+        break
+    #     loss.backward()
+    #     optimizer.step()
+    #     train_loss.update(loss.item(), batch_images.size(0))
+    #
+    # train_log = OrderedDict({"Train_Loss": train_loss.avg})
+    # train_log.update({"lr": optimizer.state_dict()["param_groups"][0]["lr"]})
+    # return train_log
+    return 1
 
-        loss.backward()
-        optimizer.step()
-        train_loss.update(loss.item(), batch_images.size(0))
 
-    train_log = OrderedDict({"Train_Loss": train_loss.avg})
-    train_log.update({"lr": optimizer.state_dict()["param_groups"][0]["lr"]})
-    return train_log
 
 
 
@@ -75,7 +81,7 @@ if __name__ == "__main__":
                             num_workers=args.n_threads, sampler=val_sample, pin_memory=False)
 
     net = unet(3, args.n_landmark).to(device)
-
+    init_model(net)
 
     if args.loss == "CRE":
         criterion = nn.CrossEntropyLoss()
@@ -95,8 +101,10 @@ if __name__ == "__main__":
     else:
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
 
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=15, verbose=True)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.9)
+
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=15, verbose=True)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.9)
+
 
     log_save_path = os.path.join(args.save_path, args.net_name, args.loss, args.optimizer)
     os.makedirs(log_save_path, exist_ok=True)
@@ -108,25 +116,26 @@ if __name__ == "__main__":
         train_log = train(net, train_loader, criterion, optimizer, device, args)
 
         val_log = val(net, val_loader, criterion, device, args)
-        scheduler.step()
-        log.update(epoch, train_log, val_log)
-        # save checkpoints
-        state = {"net": net.state_dict(),
-                 "optimizer": optimizer.state_dict(),
-                 "epoch": epoch}
-
-        torch.save(state, os.path.join(log_save_path, "latest_model.pth"))
-        trigger += 1
-
-        if val_log["Val_Loss"] < best[-1]:
-            print("save best model")
-            torch.save(state, os.path.join(log_save_path, "best_model.pth"))
-            best[0] = epoch
-            best[1] = val_log["Val_Loss"]
-            trigger = 0
-        print("Best Performance at Epoch:{}|{}".format(best[0], best[1]))
-        # 早停
-        if trigger >= args.early_stop:
-            print("=>early stopping")
-            break
+        break
+        # scheduler.step(val_log["Val_Loss"])
+        # log.update(epoch, train_log, val_log)
+        # # save checkpoints
+        # state = {"net": net.state_dict(),
+        #          "optimizer": optimizer.state_dict(),
+        #          "epoch": epoch}
+        #
+        # torch.save(state, os.path.join(log_save_path, "latest_model.pth"))
+        # trigger += 1
+        #
+        # if val_log["Val_Loss"] < best[-1]:
+        #     print("save best model")
+        #     torch.save(state, os.path.join(log_save_path, "best_model.pth"))
+        #     best[0] = epoch
+        #     best[1] = val_log["Val_Loss"]
+        #     trigger = 0
+        # print("Best Performance at Epoch:{}|{}".format(best[0], best[1]))
+        # # 早停
+        # if trigger >= args.early_stop:
+        #     print("=>early stopping")
+        #     break
     torch.cuda.empty_cache()

@@ -21,7 +21,7 @@ from config import args
 import cv2
 
 class LandMarkDataset(Dataset):
-    def __init__(self, args):
+    def __init__(self,  args):
         super(LandMarkDataset, self).__init__()
         self.ori_images = args.ori_images
         self.annotations_path = args.annotations_path
@@ -77,6 +77,27 @@ class LandMarkDataset(Dataset):
         return len(self.image_names)
 
 
+class TestDataset(Dataset):
+    def __init__(self, args):
+        super(TestDataset, self).__init__()
+        self.test_ori_image = args.test_data
+        self.names = os.listdir(self.test_ori_image)
+        self.resize = args.resize
+        self.transforme = transforms.Compose([transforms.Resize((self.resize, self.resize)),
+                                              transforms.ToTensor()
+                                              ])
+
+    def __getitem__(self, item):
+        ori_image = Image.open(os.path.join(self.test_ori_image, self.names[item])).convert("RGB")
+        ori_x, ori_y = ori_image.size
+
+        image = self.transforme(ori_image)
+        name = self.names[item]
+        return {"image": image, "name": name}
+
+    def __len__(self):
+        return len(self.names)
+
 
 
 
@@ -127,34 +148,38 @@ def get_predicted_landmarks(pred_heatmaps, ori_img_path, gauss_sigma):
 
 
 if __name__ == "__main__":
-    train_ds = LandMarkDataset(args)
-    print(len(train_ds))
-    # data = train_ds[8]
-    # print("image:",data["image"].shape, "label", data["label"].shape, "name:", data["name"])
+    test_ds = TestDataset(args)
+    print(len(test_ds))
+    print(test_ds.__getitem__(4))
 
-    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    for batch in train_dl:
-        image = batch["image"]
-        heatmap = batch["label"]
-        names = batch["name"]
-        break
-    print(names)
-    for i in range(args.batch_size):
-        i = 1
-        ori_image_path = os.path.join(args.ori_images, names[i] + ".png")
-        print("pred_heatmaps:", heatmap[i].shape)
-        print("ori_image_path：", ori_image_path)
-        pred_landmarks, max_activations = get_predicted_landmarks(pred_heatmaps=heatmap[i],
-                                                                  ori_img_path=ori_image_path,
-                                                                  gauss_sigma=args.gauss_sigma)
-        print("pred_landmarks：", type(pred_landmarks))
-        ori_image = cv2.imread(ori_image_path)
-        print(ori_image.shape)
-        for j in range(len(pred_landmarks)):
-            x = int(pred_landmarks[j][1])
-            y = int(pred_landmarks[j][0])
-            cv2.circle(ori_image, (x, y), radius=1, color=[0, 0, 255], thickness=4)
-            cv2.putText(ori_image, text=str(j + 1), org=(x, y),
-                        fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=[0, 255, 0], thickness=2)
-        cv2.imwrite(f"{names[i]}_labeld.png", ori_image)
-        break
+    # train_ds = LandMarkDataset(args)
+    # print(len(train_ds))
+    # # data = train_ds[8]
+    # # print("image:",data["image"].shape, "label", data["label"].shape, "name:", data["name"])
+    #
+    # train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    # for batch in train_dl:
+    #     image = batch["image"]
+    #     heatmap = batch["label"]
+    #     names = batch["name"]
+    #     break
+    # print(names)
+    # for i in range(args.batch_size):
+    #     i = 1
+    #     ori_image_path = os.path.join(args.ori_images, names[i] + ".png")
+    #     print("pred_heatmaps:", heatmap[i].shape)
+    #     print("ori_image_path：", ori_image_path)
+    #     pred_landmarks, max_activations = get_predicted_landmarks(pred_heatmaps=heatmap[i],
+    #                                                               ori_img_path=ori_image_path,
+    #                                                               gauss_sigma=args.gauss_sigma)
+    #     print("pred_landmarks：", type(pred_landmarks))
+    #     ori_image = cv2.imread(ori_image_path)
+    #     print(ori_image.shape)
+    #     for j in range(len(pred_landmarks)):
+    #         x = int(pred_landmarks[j][1])
+    #         y = int(pred_landmarks[j][0])
+    #         cv2.circle(ori_image, (x, y), radius=1, color=[0, 0, 255], thickness=4)
+    #         cv2.putText(ori_image, text=str(j + 1), org=(x, y),
+    #                     fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=[0, 255, 0], thickness=2)
+    #     cv2.imwrite(f"{names[i]}_labeld.png", ori_image)
+    #     break

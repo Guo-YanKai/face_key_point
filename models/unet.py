@@ -78,11 +78,11 @@ class unet(nn.Module):
         self.predict_gaussian = predict_gaussian
 
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                init_weights(m, init_type="kaiming")
-            elif isinstance(m, nn.BatchNorm2d):
-                init_weights(m, init_type="kaiming")
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         init_weights(m, init_type="kaiming")
+        #     elif isinstance(m, nn.BatchNorm2d):
+        #         init_weights(m, init_type="kaiming")
 
 
 
